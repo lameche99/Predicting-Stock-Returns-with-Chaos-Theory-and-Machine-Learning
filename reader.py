@@ -31,4 +31,6 @@ class Reader:
         dfs = dict()
         for name in self.files:
             df = pd.read_csv('./stock_dfs/{}'.format(name))
+            df.columns = ['date', 'Open', 'High', 'Low', 'Close', 'Volume']
+            dfs[name] = df
         return dfs
