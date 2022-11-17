@@ -1,23 +1,30 @@
 import pandas as pd
 import yfinance as yf
+import gc
 import os
 import sys
 
+gc.enable()
 sys.path.append(os.getcwd())
 
 class Reader:
 
     # constructor to read YF data
-    def __init__(self, start: str, end: str, tickers: list, freq: str = '1d'):
+    def __init__(
+        self,
+        tickers: list,
+        start: str = '',
+        end: str = '',
+        frequency: str = '1d',
+        yahoo: bool = True
+        ):
+
+        self.tickers = tickers
         self.start = start
         self.end = end
-        self.tickers = tickers
-        self.frequency = freq
+        self.frequency = frequency
+        self.yahoo = yahoo
     
-    # constructor to read given data 
-    def __init__(self, files: list) -> None:
-        self.files = files
-
     # read data from Yahoo Finance from list of tickers
     def read_yahoo(self):
         dfs = dict()
@@ -29,8 +36,18 @@ class Reader:
     # read given data
     def read_files(self):
         dfs = dict()
-        for name in self.files:
+        for name in self.tickers:
             df = pd.read_csv('./stock_dfs/{}'.format(name))
-            df.columns = ['date', 'Open', 'High', 'Low', 'Close', 'Volume']
+            df.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+            df['Date'] = pd.to_datetime(df['Date'])
+            df = df.set_index('Date')
+            gc.collect()
             dfs[name] = df
         return dfs
+    
+    # read data
+    def read(self):
+        if self.yahoo:
+            return self.read_yahoo()
+        else:
+            return self.read_files()
