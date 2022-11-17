@@ -1,8 +1,6 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-import ta
-import sklearn
 
 class Engineer:
 
@@ -47,7 +45,7 @@ class Engineer:
 
         t = prices.rolling(tide).mean()
         w = prices.rolling(wave).mean()
-        r = prices.rolling(ripple)
+        r = prices.rolling(ripple).mean()
 
         pos_twr = np.where((t > w) & (w > r), 1, 0)
         neg_twr = np.where((t < w) & (w < r), 1, 0)
@@ -55,7 +53,7 @@ class Engineer:
         return pos_twr, neg_twr
     
 
-    def get_fractals(self, prices: pd.Series, period: int):
+    def get_fractals(self, highs: pd.Series, lows: pd.Series, period: int):
         """
         This function calculates the top and bottom fractals on a certain number of time intervals
         :param period: int -- number of time intervals to look for a fractal pattern
@@ -66,10 +64,10 @@ class Engineer:
         """
 
         tops = np.where(
-            prices == prices.rolling(period, center=True).max(), 1, 0
+            highs == highs.rolling(period, center=True).max(), 1, 0
         )
         bottoms = np.where(
-            prices == prices.rolling(period, center=True).min(), 1, 0
+            lows == lows.rolling(period, center=True).min(), 1, 0
         )
 
         return tops, bottoms
@@ -91,6 +89,18 @@ class Engineer:
         )
 
         return squats
+
+    def get_prediction(self, prices: pd.Series, holding_period: int):
+        """
+        This function returns the prediction variable or whether the
+        HPR is positive or negative
+        :param prices: pd.Series -- time series of stock prices
+        :param holding_period: int -- holding period length
+        :return: pd.Series -- series of binary indicators: 1=positive returns, 0=else
+        """
+        rets = prices.pct_change(holding_period)
+        prediction = np.where(rets > 0, 1, 0)
+        return prediction
     
 
     def engineer_features(
@@ -102,7 +112,8 @@ class Engineer:
         signal: int = 5,
         tide: int = 5,
         wave: int = 13,
-        ripple: int = 34
+        ripple: int = 34,
+        holding_period: int = 5
         ):
         """
         This function calculates predictor variables with One-Hot-Encoding
@@ -124,7 +135,8 @@ class Engineer:
 
         df['macd_pos'], df['macd_neg'] = self.get_macd(prices, fast, slow, signal)
         df['alligator_pos'], df['alligator_neg'] = self.get_alligator(prices, tide, wave, ripple)
-        df['tops'], df['bottoms'] = self.get_fractals(prices, period)
+        df['tops'], df['bottoms'] = self.get_fractals(highs, lows, period)
         df['squat'] = self.get_squat(highs, lows, volume)
+        df['prediction'] = self.get_prediction(prices, holding_period)
 
         return df
