@@ -1,5 +1,5 @@
 import pandas as pd
-import pandas_ta as ta
+from ta.trend import ema_indicator
 import numpy as np
 
 class Engineer:
@@ -16,20 +16,17 @@ class Engineer:
         :param fast: int - fast EMA window
         :param slow: int - slow EMA window
         :param signal: int - signal EMA window
-        :return: tuple(pd.Series, pd.Series) - returns two series of binary indicators
-        pos_macd: 1=(fast - slow)>signal, 0=else
-        neg_macd: 1=(fast - slow)<signal, 0=else
+        :return: tuple(pd.Series, pd.Series) - returns two time series
+        macd: fast EMA - slow EMA
+        signal: EMA of macd
         """
 
-        f = ta.ema(prices, length=fast)
-        s = ta.ema(prices, length=slow)
-        sig = ta.ema(prices, length=signal)
+        f = ema_indicator(prices, window=fast)
+        s = ema_indicator(prices, window=slow)
         macd = f - s
+        sig = ema_indicator(macd, window=signal)
 
-        pos_macd = np.where(macd > sig, 1, 0)
-        neg_macd = np.where(macd < sig, 1, 0)
-
-        return pos_macd, neg_macd
+        return macd, sig
     
     def get_alligator(self, prices: pd.Series, tide: int, wave: int, ripple: int):
         """
@@ -38,19 +35,16 @@ class Engineer:
         :param tide: int -- tide moving average period
         :param wave: int -- wave moving average period
         :param ripple: int -- ripple moving average period
-        :return: tuple(pd.Series, pd.Series) - returns two series of binary indicators
-        pos_twr: 1=(tide > wave & wave > ripple), 0=else
-        neg_twr: 1=(tide < wave & wave < ripple), 0=else
+        :return: tuple(pd.Series, pd.Series) - returns three time series
+        t: fast MA
+        w: medium MA
+        r: slow MA
         """
-
         t = prices.rolling(tide).mean()
         w = prices.rolling(wave).mean()
         r = prices.rolling(ripple).mean()
 
-        pos_twr = np.where((t > w) & (w > r), 1, 0)
-        neg_twr = np.where((t < w) & (w < r), 1, 0)
-
-        return pos_twr, neg_twr
+        return t, w, r
     
 
     def get_fractals(self, highs: pd.Series, lows: pd.Series, period: int):
@@ -58,17 +52,13 @@ class Engineer:
         This function calculates the top and bottom fractals on a certain number of time intervals
         :param period: int -- number of time intervals to look for a fractal pattern
         :param prices: pd.Series -- time series of stock prices
-        :return: tuple(pd.Series, pd.Series) -- returns two series of binary indicators
-        tops: 1=max high of n_period neighbors, 0=else
-        bottoms: 1=min low of n_period neighbors, 0=else
+        :return: tuple(pd.Series, pd.Series) -- returns two time series
+        tops: max high of n_neighbors left and right
+        bottoms: min low of n_neighbors left and right
         """
 
-        tops = np.where(
-            highs == highs.rolling(period, center=True).max(), 1, 0
-        )
-        bottoms = np.where(
-            lows == lows.rolling(period, center=True).min(), 1, 0
-        )
+        tops = highs.rolling(period, center=True).max()
+        bottoms = lows.rolling(period, center=True).min()
 
         return tops, bottoms
     
@@ -78,17 +68,17 @@ class Engineer:
         :param highs: pd.Series -- time series of stock highs
         :param lows: pd.Series -- time series of stock lows
         :param volume: pd.Series -- time series of volume
-        :return: pd.Series -- series of binary indicators
-        squats: 1=(volume change > 0 & MFI change < 0), 0=else
+        :return: pd.Series -- two time series
+        mfi_change: percent change in MFI
         where MFI = (High - Low) / Volume
+        vol_change: percent change in volume
         """
 
         mfi = (highs - lows) / volume
-        squats = np.where(
-            (volume.pct_change() > 0) & (mfi.pct_change() < 0), 1, 0
-        )
-
-        return squats
+        mfi_change = mfi.pct_change().astype(np.float64)
+        vol_change = volume.pct_change().astype(np.float64)
+        
+        return mfi_change, vol_change
 
     def get_prediction(self, prices: pd.Series, holding_period: int):
         """
@@ -133,10 +123,10 @@ class Engineer:
         lows = df['Low']
         volume = df['Volume']
 
-        df['macd_pos'], df['macd_neg'] = self.get_macd(prices, fast, slow, signal)
-        df['alligator_pos'], df['alligator_neg'] = self.get_alligator(prices, tide, wave, ripple)
+        df['macd'], df['signal'] = self.get_macd(prices, fast, slow, signal)
+        df['tide'], df['wave'], df['ripple'] = self.get_alligator(prices, tide, wave, ripple)
         df['tops'], df['bottoms'] = self.get_fractals(highs, lows, period)
-        df['squat'] = self.get_squat(highs, lows, volume)
+        df['mfi_change'], df['volume_change'] = self.get_squat(highs, lows, volume)
         df['prediction'] = self.get_prediction(prices, holding_period)
 
         return df
