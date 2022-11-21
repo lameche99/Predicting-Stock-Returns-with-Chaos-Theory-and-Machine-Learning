@@ -13,6 +13,10 @@ class Processor:
     def __init__(self) -> None:
         pass
 
+    def clean_data(self, df: pd.DataFrame):
+        for col in df.columns:
+            df[col] = df[col].ffill()
+
     def scale_data(self, df: pd.DataFrame):
         """
         This function forward fills missing values in the columns

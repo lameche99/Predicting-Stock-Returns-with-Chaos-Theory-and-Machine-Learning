@@ -27,6 +27,6 @@ class Reader:
     def read_yahoo(self):
         dfs = dict()
         for t in self.tickers:
-            data = yf.download(t, start=self.start, end=self.end, interval=self.frequency)
+            data = yf.download(t, start=self.start, end=self.end, interval=self.frequency, progress=False)
             dfs[t] = data
         return dfs
