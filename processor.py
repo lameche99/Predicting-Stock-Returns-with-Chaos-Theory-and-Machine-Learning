@@ -43,7 +43,7 @@ class Processor:
         """
         This function splits predictor and prediction into train and test sets
         """
-        return train_test_split(X, y, test_size=test_s, random_state=rand_s)
+        return train_test_split(X, y, test_size=test_s, random_state=rand_s, train_size=1-test_s)
     
     @ignore_warnings(category=ConvergenceWarning)
     def fit_and_score(

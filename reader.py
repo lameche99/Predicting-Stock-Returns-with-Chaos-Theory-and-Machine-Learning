@@ -1,11 +1,4 @@
-import pandas as pd
 import yfinance as yf
-import gc
-import os
-import sys
-
-gc.enable()
-sys.path.append(os.getcwd())
 
 class Reader:
 
@@ -25,8 +18,12 @@ class Reader:
     
     # read data from Yahoo Finance from list of tickers
     def read_yahoo(self):
-        dfs = dict()
-        for t in self.tickers:
-            data = yf.download(t, start=self.start, end=self.end, interval=self.frequency, progress=False)
-            dfs[t] = data
-        return dfs
+        data = yf.download(
+            self.tickers,
+            start=self.start,
+            end=self.end,
+            interval=self.frequency,
+            progress=False,
+            group_by='ticker',
+            show_errors=False)
+        return data
