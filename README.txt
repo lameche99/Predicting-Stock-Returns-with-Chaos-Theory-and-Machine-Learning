@@ -30,9 +30,18 @@ Libraries and Packages:
     - warnings
 To install any of these libraries, in the terminal, run: pip install {library_name}
 
-2. Compile and Run
+3. Compile and Run
 
 In order to compile the file follow these steps:
     - store data files into a folder named "data"
     - store "data" folder and .py files into the same directory
     - in the terminal run: python3.10 Orlandi_Michele_project2.py
+
+4. Output
+
+This project outputs four results files:
+    - small_NN_results.csv: NN results for small universe
+    - large_NN_results.csv: NN results for large universe
+    - small_SVC_results.csv: SVC results for small universe
+    - large_SVC_results.csv: SVC results for large universe
+The whole project will take about 2 hours to run
