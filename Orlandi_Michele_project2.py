@@ -113,7 +113,7 @@ def plot_data(df: pd.DataFrame, title: str, acc_bench: float, prec_bench: float)
 # ## 1.4 **Preprocess Data**
 
 # %%
-# preprocess data
+# create processor and engineer objects
 processor = Processor()
 engineer = Engineer()
 
