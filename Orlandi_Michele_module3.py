@@ -57,7 +57,18 @@ class Processor:
         model: str,
         params: dict = {}
         ):
-
+        """
+        This function fits an ML model to a set of training data
+        and it predicts results on test data and returns accuracy and precision scores.
+        
+        :param X_train: pd.DataFrame -- predictor training data
+        :param X_test: pd.DataFrame -- predictor test data
+        :param y_train: pd.Series -- prediction training data
+        :param y_test: pd.Series -- prediction test data
+        :param model: str -- what model to use
+        :param params: dict -- hyperparameters to be tuned
+        :return: tuple(float, float) -- accuracy and precision scores
+        """
         if model == 'mlp':
             mlp = MLPClassifier(
                 hidden_layer_sizes=(50,50,50),

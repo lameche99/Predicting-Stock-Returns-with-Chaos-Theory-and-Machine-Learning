@@ -18,6 +18,9 @@ class Reader:
     
     # read data from Yahoo Finance from list of tickers
     def read_yahoo(self):
+        """
+        This function reads tickers and downloads data from Yahoo Finance API
+        """
         data = yf.download(
             self.tickers,
             start=self.start,
