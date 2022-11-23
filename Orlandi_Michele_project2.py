@@ -76,6 +76,7 @@ large_dfs = reader_2.read_yahoo()
 # ## 1.3 **Helper Functions**
 
 # %%
+# function to get a scatter plot
 def get_scatter(xval: pd.Series, yval: pd.Series, yname: str, mode: str = 'markers'):
     fig = go.Scatter(
         mode=mode,
@@ -86,6 +87,7 @@ def get_scatter(xval: pd.Series, yval: pd.Series, yname: str, mode: str = 'marke
     return fig
 
 # %%
+# function to plot results
 def plot_data(df: pd.DataFrame, title: str, acc_bench: float, prec_bench: float):
     fig = go.Figure()
     for col in df.columns:
@@ -133,7 +135,9 @@ feats = ['macd', 'signal', 'tide', 'wave',\
 feature_dict = dict()
 for t in tickers:
     df = dfs.loc[:, t].copy()
+    # clean data
     processor.clean_data(df)
+    # create predictor variables
     new_df = engineer.engineer_features(
         df,
         period=fractal_period,
@@ -147,6 +151,7 @@ for t in tickers:
     )
     new_df['prediction'] = new_df['prediction'].shift(-holding_period)
     new_df = new_df[np.isfinite(new_df).all(1)].copy()
+    # standardize data
     processor.scale_data(new_df)
     feature_dict[t] = new_df.loc[:, feats].copy()
     gc.collect()
@@ -160,15 +165,17 @@ for t in tickers:
 large_feature_dict = dict()
 for t in large_dfs.columns.levels[0].to_list():
     large_df = large_dfs.loc[:, t].copy()
+    # check if data frame is full of nan values
     if large_df.isna().values.all():
         continue
+    # check if any of the columns is full of nan values
     for col in large_df.columns:
         if large_df[col].isna().values.all():
             break
     else:
-        # print(large_df.describe())
+        # clean data
         processor.clean_data(large_df)
-        # print(large_df)
+        # add predictor variables
         new_df = engineer.engineer_features(
             large_df,
             period=fractal_period,
@@ -182,8 +189,10 @@ for t in large_dfs.columns.levels[0].to_list():
         )
         new_df['prediction'] = new_df['prediction'].shift(-holding_period)
         new_df = new_df[np.isfinite(new_df).all(1)].copy()
+        # check if the new dataframe is empty
         if new_df.empty:
             continue
+        # standardize data
         processor.scale_data(new_df)
         large_feature_dict[t] = new_df.loc[:, feats].copy()
         gc.collect()
@@ -209,10 +218,12 @@ results = {
 # %%
 # # apply NN to each stock and store results
 for t in feature_dict.keys():
+    # split data
     x_train, x_test, y_train, y_test = processor.split_data(
         feature_dict[t].loc[:, feature_dict[t].columns[:-1]].copy(),
         feature_dict[t].loc[:, 'prediction'].copy()
         )
+    # fit model and get scores
     accuracy, precision = processor.fit_and_score(x_train, x_test, y_train, y_test, 'mlp')
     results['accuracy'].append(round(accuracy, 5))
     results['precision'].append(round(precision, 5))
@@ -235,13 +246,16 @@ large_results = {
 # %%
 # # apply NN to each stock and store results
 for t in large_feature_dict.keys():
+    # check if there is enough data for model
     if (len(large_feature_dict[t]) * 0.4) < (holding_period * 5):
         continue
     else:
+        # split data
         x_train, x_test, y_train, y_test = processor.split_data(
             large_feature_dict[t].loc[:, large_feature_dict[t].columns[:-1]].copy(),
             large_feature_dict[t].loc[:, 'prediction'].copy()
             )
+        # fit model and get results
         accuracy, precision = processor.fit_and_score(x_train, x_test, y_train, y_test, 'mlp')
         large_results['ticker'].append(t)
         large_results['accuracy'].append(round(accuracy, 5))
@@ -287,11 +301,14 @@ svm_results = {
 }
 
 # %%
+# split data, fit model and get store results into dictionary
 for t in feature_dict.keys():
+    # split data
     x_train, x_test, y_train, y_test = processor.split_data(
         feature_dict[t].loc[:, feature_dict[t].columns[:-1]].copy(),
         feature_dict[t].loc[:, 'prediction'].copy()
         )
+    # fit model and get scores
     accuracy, precision = processor.fit_and_score(x_train, x_test, y_train, y_test, 'svm', params)
     svm_results['accuracy'].append(round(accuracy, 5))
     svm_results['precision'].append(round(precision, 5))
@@ -312,14 +329,17 @@ large_svm_results = {
 }
 
 # %%
+# split data, fit model and get store results into dictionary
 for t in large_feature_dict.keys():
     if (len(large_feature_dict[t]) * 0.4) < (holding_period * 5):
         continue
     else:
+        # split data
         x_train, x_test, y_train, y_test = processor.split_data(
             large_feature_dict[t].loc[:, large_feature_dict[t].columns[:-1]].copy(),
             large_feature_dict[t].loc[:, 'prediction'].copy()
             )
+        # fit model and get scores
         accuracy, precision = processor.fit_and_score(x_train, x_test, y_train, y_test, 'svm', params)
         large_svm_results['ticker'].append(t)
         large_svm_results['accuracy'].append(round(accuracy, 5))
